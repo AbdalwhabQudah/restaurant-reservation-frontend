@@ -18,6 +18,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MenuCard from "../components/MenuCard";
 import { useRestaurant } from "../context/RestaurantContext";
+import RestaurantMap from "../components/RestaurantMap";
+
 
 export default function Home() {
   const { menuItems } = useRestaurant();
@@ -80,6 +82,25 @@ export default function Home() {
               }}
             />
           </Box>
+          <Box sx={{ mt: 4 }}>
+  <Typography
+    variant="h5"
+    textAlign="center"
+    sx={{ mb: 1 }}
+  >
+    Find Us on the Map
+  </Typography>
+
+  <Typography
+    textAlign="center"
+    color="text.secondary"
+    sx={{ mb: 3 }}
+  >
+    Visit Delish Restaurant in Amman, Jordan.
+  </Typography>
+
+  <RestaurantMap />
+</Box>
         </Container>
       </Box>
 
