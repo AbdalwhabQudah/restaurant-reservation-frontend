@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   Paper,
   Stack,
@@ -20,6 +21,7 @@ import { useAuth } from "../context/AuthContext";
 export default function Auth() {
   const [tab, setTab] = useState(0);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
     fullName: "",
@@ -41,11 +43,15 @@ export default function Auth() {
     }
   };
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     setMessage("");
+    setSubmitting(true);
 
-    const result = login(loginForm.email, loginForm.password);
+    const result = await login(loginForm.email, loginForm.password);
+
+    setSubmitting(false);
+
     if (!result.ok) {
       setMessage(result.message);
       return;
@@ -54,17 +60,22 @@ export default function Auth() {
     redirectUser(result.user);
   };
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     event.preventDefault();
     setMessage("");
 
-    if (!registerForm.fullName || !registerForm.email || !registerForm.password) {
+    if (
+      !registerForm.fullName ||
+      !registerForm.email ||
+      !registerForm.phone ||
+      !registerForm.password
+    ) {
       setMessage("Please complete the required fields.");
       return;
     }
 
-    if (registerForm.password.length < 6) {
-      setMessage("Password must contain at least 6 characters.");
+    if (registerForm.password.length < 8) {
+      setMessage("Password must contain at least 8 characters.");
       return;
     }
 
@@ -73,7 +84,12 @@ export default function Auth() {
       return;
     }
 
-    const result = register(registerForm);
+    setSubmitting(true);
+
+    const result = await register(registerForm);
+
+    setSubmitting(false);
+
     if (!result.ok) {
       setMessage(result.message);
       return;
@@ -95,12 +111,23 @@ export default function Auth() {
             }}
           >
             <Box sx={{ p: { xs: 3, md: 5 } }}>
-              <Tabs value={tab} onChange={(_, value) => { setTab(value); setMessage(""); }} sx={{ mb: 3 }}>
+              <Tabs
+                value={tab}
+                onChange={(_, value) => {
+                  setTab(value);
+                  setMessage("");
+                }}
+                sx={{ mb: 3 }}
+              >
                 <Tab label="Login" />
                 <Tab label="Register" />
               </Tabs>
 
-              {message && <Alert severity="error" sx={{ mb: 2 }}>{message}</Alert>}
+              {message && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {message}
+                </Alert>
+              )}
 
               {tab === 0 ? (
                 <Box component="form" onSubmit={handleLogin}>
@@ -108,25 +135,38 @@ export default function Auth() {
                     <TextField
                       label="Email"
                       type="email"
+                      required
                       value={loginForm.email}
-                      onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                      onChange={(event) =>
+                        setLoginForm({ ...loginForm, email: event.target.value })
+                      }
                       fullWidth
                     />
+
                     <TextField
                       label="Password"
                       type="password"
+                      required
                       value={loginForm.password}
-                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                      onChange={(event) =>
+                        setLoginForm({ ...loginForm, password: event.target.value })
+                      }
                       fullWidth
                     />
-                    <Button type="submit" variant="contained" size="large">
-                      Login
+
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      disabled={submitting}
+                    >
+                      {submitting ? <CircularProgress size={24} /> : "Login"}
                     </Button>
 
                     <Alert severity="info">
-                      Demo customer: customer@delish.com / Customer123!
+                      Test customer: testcustomer@delish.com / Password123!
                       <br />
-                      Demo admin: admin@delish.com / Admin123!
+                      Test admin: testadmin@delish.com / Admin123!
                     </Alert>
                   </Stack>
                 </Box>
@@ -135,41 +175,73 @@ export default function Auth() {
                   <Stack spacing={2}>
                     <TextField
                       label="Full Name"
+                      required
                       value={registerForm.fullName}
-                      onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Email"
-                      type="email"
-                      value={registerForm.email}
-                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Phone Number"
-                      value={registerForm.phone}
-                      onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Password"
-                      type="password"
-                      value={registerForm.password}
-                      onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Confirm Password"
-                      type="password"
-                      value={registerForm.confirmPassword}
-                      onChange={(e) =>
-                        setRegisterForm({ ...registerForm, confirmPassword: e.target.value })
+                      onChange={(event) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          fullName: event.target.value,
+                        })
                       }
                       fullWidth
                     />
-                    <Button type="submit" variant="contained" size="large">
-                      Create Account
+
+                    <TextField
+                      label="Email"
+                      type="email"
+                      required
+                      value={registerForm.email}
+                      onChange={(event) =>
+                        setRegisterForm({ ...registerForm, email: event.target.value })
+                      }
+                      fullWidth
+                    />
+
+                    <TextField
+                      label="Phone Number"
+                      required
+                      value={registerForm.phone}
+                      onChange={(event) =>
+                        setRegisterForm({ ...registerForm, phone: event.target.value })
+                      }
+                      fullWidth
+                    />
+
+                    <TextField
+                      label="Password"
+                      type="password"
+                      required
+                      value={registerForm.password}
+                      onChange={(event) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          password: event.target.value,
+                        })
+                      }
+                      fullWidth
+                    />
+
+                    <TextField
+                      label="Confirm Password"
+                      type="password"
+                      required
+                      value={registerForm.confirmPassword}
+                      onChange={(event) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          confirmPassword: event.target.value,
+                        })
+                      }
+                      fullWidth
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      disabled={submitting}
+                    >
+                      {submitting ? <CircularProgress size={24} /> : "Create Account"}
                     </Button>
                   </Stack>
                 </Box>
