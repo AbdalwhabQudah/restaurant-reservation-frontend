@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   MenuItem,
   Paper,
@@ -32,6 +33,8 @@ export default function Reservation() {
   });
   const [availableTable, setAvailableTable] = useState(null);
   const [message, setMessage] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [booking, setBooking] = useState(false);
 
   const minDate = new Date().toISOString().split("T")[0];
 
@@ -42,18 +45,32 @@ export default function Reservation() {
     setMessage("");
   };
 
-  const checkAvailability = () => {
+  const checkAvailability = async () => {
     if (!form.date || !form.time || !form.guests) {
       setMessage("Please select a date, time and number of guests.");
       return;
     }
 
-    const table = findAvailableTable(form.date, form.time, form.guests);
-    setAvailableTable(table);
-    setMessage(table ? "A table is available." : "No suitable table is available for this time.");
+    try {
+      setChecking(true);
+      setMessage("");
+
+      const table = await findAvailableTable(form.date, form.time, form.guests);
+      setAvailableTable(table);
+      setMessage(
+        table
+          ? "A table is available."
+          : "No suitable table is available for this time."
+      );
+    } catch (error) {
+      setAvailableTable(null);
+      setMessage(error?.response?.data?.message || "Could not check availability.");
+    } finally {
+      setChecking(false);
+    }
   };
 
-  const confirmBooking = () => {
+  const confirmBooking = async () => {
     if (!availableTable) {
       setMessage("Check availability before confirming your booking.");
       return;
@@ -69,17 +86,24 @@ export default function Reservation() {
       return;
     }
 
-    addReservation({
-      userId: user.id,
-      customerName: user.fullName,
-      date: form.date,
-      time: form.time,
-      guests: Number(form.guests),
-      tableId: availableTable.id,
-      specialRequest: form.specialRequest.trim(),
-    });
+    try {
+      setBooking(true);
+      setMessage("");
 
-    navigate("/customer-dashboard");
+      await addReservation({
+        date: form.date,
+        time: form.time,
+        guests: Number(form.guests),
+        specialRequest: form.specialRequest.trim(),
+      });
+
+      navigate("/customer-dashboard");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Could not create reservation.");
+      setAvailableTable(null);
+    } finally {
+      setBooking(false);
+    }
   };
 
   return (
@@ -157,8 +181,13 @@ export default function Reservation() {
                 fullWidth
               />
 
-              <Button variant="contained" size="large" onClick={checkAvailability}>
-                Check Availability
+              <Button
+                variant="contained"
+                size="large"
+                onClick={checkAvailability}
+                disabled={checking}
+              >
+                {checking ? <CircularProgress size={24} /> : "Check Availability"}
               </Button>
 
               {message && (
@@ -192,11 +221,11 @@ export default function Reservation() {
             <Button
               variant="contained"
               size="large"
-              disabled={!availableTable}
+              disabled={!availableTable || booking}
               onClick={confirmBooking}
               sx={{ mt: 4, width: "100%" }}
             >
-              Confirm Booking
+              {booking ? <CircularProgress size={24} /> : "Confirm Booking"}
             </Button>
           </Paper>
         </Box>
